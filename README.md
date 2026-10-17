@@ -1,37 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MediTrust360 Staff Workspace
 
-## Getting Started
+The MediTrust360 Staff Workspace is a role-aware web application for facility teams. It connects reception, nursing, clinical, pharmacy, laboratory, and finance workflows to the MediTrust API.
 
-First, run the development server:
+## What it supports
+
+- Staff sign-in, password recovery, password reset, password change, and secure sign-out.
+- Reception workflows for patient search, consent-aware check-in, walk-in registration, check-in requests, and visit-queue management.
+- Nursing workflows for reviewing the live queue and recording patient vital signs.
+- Doctor workflows for appointments, patient search, longitudinal records, consultations, prescriptions, and visit-queue management.
+- Pharmacy, laboratory, and finance workspaces for their respective operational workflows.
+- Facility-scoped access, role-specific navigation, responsive layouts, and a secure server-side API proxy.
+
+## Prerequisites
+
+- Node.js 20 or later
+- npm
+- A running MediTrust API instance (the default URL is `http://localhost:8000/api`)
+
+## Getting started
+
+Install the dependencies:
+
+```bash
+npm install
+```
+
+Create a `.env.local` file in the project root:
+
+```env
+MEDITRUST_API_BASE_URL=http://localhost:8000/api
+```
+
+Update the value if the MediTrust API is hosted elsewhere. Do not expose backend credentials or tokens in this file; authentication tokens are managed in an HTTP-only cookie by the application.
+
+Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). Unauthenticated visitors are sent to `/login`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Available scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the local development server. |
+| `npm run lint` | Run ESLint. |
+| `npm run build` | Create a production build. |
+| `npm run start` | Serve the production build. |
 
-## Learn More
+## API integration
 
-To learn more about Next.js, take a look at the following resources:
+The browser does not call the MediTrust API directly. Server routes under `app/api` forward requests to `MEDITRUST_API_BASE_URL`:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `app/api/auth/*` handles staff authentication and password-management requests.
+- `app/api/backend/[...path]` forwards authenticated application requests with the server-managed bearer token.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+On a successful sign-in, the backend token is stored as the `meditrust_token` HTTP-only cookie. The UI stores only the staff-session details required to render the appropriate workspace.
 
-## Deploy on Vercel
+## Project structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```text
+app/
+├── api/                 # Authentication handlers and authenticated API proxy
+├── components/          # Role workspaces, patient views, and shared UI
+├── lib/meditrust.ts     # API client, domain types, and session helpers
+├── login/               # Staff sign-in and password recovery experience
+├── globals.css          # Application styles
+├── layout.tsx           # Root layout, metadata, and local font setup
+└── page.tsx             # Staff workspace entry point
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# MediTrust360
+## Roles
+
+The interface recognizes `reception`, `nurse`, `doctor`, `pharmacy`, `pharmacist`, `lab`, `lab_tech`, and `finance` staff roles. The API must return a supported `facility_staff.role` and an associated facility for a staff member to access the workspace.
+
+## Production
+
+Before deployment, set `MEDITRUST_API_BASE_URL` to the production API URL in the hosting environment, then run:
+
+```bash
+npm run build
+npm run start
+```
+
+Use HTTPS in production so the authentication cookie is transmitted securely.
